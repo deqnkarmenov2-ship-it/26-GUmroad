@@ -448,15 +448,44 @@
 
         
         // -----------------------------------------------------
-        // ПОМОЩНИ ФУНКЦИИ
+        // НОВИ ПОМОЩНИ ФУНКЦИИ ЗА COOKIE-ТА
         // -----------------------------------------------------
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            // Правим го Secure и SameSite=Strict за модерните браузъри
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/; Secure; SameSite=Strict";
+        }
+        
         function roundMoney(amount) {
             return Math.round((amount + Number.EPSILON) * 100) / 100;
         }
 
-        // 1. Генерира или взима уникален ID на устройството
+
+        // 1. КОРИГИРАНА ФУНКЦИЯ: Генерира или взима уникален ID на устройството
         function getOrCreateUUID() {
             let uuid = localStorage.getItem('deviceUUID');
+            
+            // Ако не е в localStorage, провери в cookies
+            if (!uuid) {
+                uuid = getCookie('deviceUUID_cookie'); 
+            }
+
             if (!uuid) {
                 // Генерира нов UUIDv4
                 uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -464,8 +493,16 @@
                     const v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
+                
+                // Запазва го в localStorage и в cookie (за 10 години)
+                localStorage.setItem('deviceUUID', uuid);
+                setCookie('deviceUUID_cookie', uuid, 3650); 
+            }
+            // Ако е взето от cookie, но не е в localStorage (след изчистване), го възстановяваме в localStorage
+            else if (!localStorage.getItem('deviceUUID')) {
                 localStorage.setItem('deviceUUID', uuid);
             }
+            
             return uuid;
         }
 
@@ -493,7 +530,7 @@
         
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
-            const uuid = getOrCreateUUID();
+            const uuid = getOrCreateUUID(); // <-- Използваме новата, по-устойчива функция
             
             if (!unlockKey) {
                 alert("Моля, въведете Вашия код.");
