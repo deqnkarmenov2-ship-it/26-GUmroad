@@ -371,12 +371,14 @@
             <button id="dismissButton" class="btn-reset">Затвори</button>
         </div>
     </div>
+    
     <script>
-        // *** ----------------------------------------------------- ***
-        // *** КОНСТАНТИ ЗА СИГУРНОСТ (Apps Script) ***
-        // *** ----------------------------------------------------- ***
+        // ==============================================================================
+        // КОНСТАНТИ - УВЕРЕТЕ СЕ, ЧЕ API_ENDPOINT Е АКТУАЛЕН
+        // ==============================================================================
         const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzEVc1FWkjDkIBmBUs6ubp09bFD48vyRB6zlOshR3bJhqU3VP6pfyb7flOdqwPEHSKc/exec"; 
-        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript'; 
+        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript'; // Ключ за статуса в localStorage
+        const LS_UUID = 'deviceUUID'; // Ключ за UUID в localStorage
         const EURO_RATE = 1.95583;
 
         let deferredPrompt; 
@@ -384,10 +386,10 @@
         const installButton = document.getElementById('installButton');
         const dismissButton = document.getElementById('dismissButton');
         const LS_INSTALLED_STATUS = 'pwa_installed'; 
-
-        // -----------------------------------------------------
+        
+        // ==============================================================================
         // PWA - ЛОГИКА ЗА ОФЛАЙН И ИНСТАЛАЦИЯ (Без промяна)
-        // -----------------------------------------------------
+        // ==============================================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 // 1. Регистрация на Service Worker
@@ -447,16 +449,12 @@
         });
 
         
-        // -----------------------------------------------------
-        // ПОМОЩНИ ФУНКЦИИ
-        // -----------------------------------------------------
-        function roundMoney(amount) {
-            return Math.round((amount + Number.EPSILON) * 100) / 100;
-        }
-
-        // 1. Генерира или взима уникален ID на устройството
+        // ==============================================================================
+        // ФУНКЦИИ ЗА UUID (МАКСИМАЛНА УСТОЙЧИВОСТ)
+        // ==============================================================================
         function getOrCreateUUID() {
-            let uuid = localStorage.getItem('deviceUUID');
+            let uuid = localStorage.getItem(LS_UUID);
+            
             if (!uuid) {
                 // Генерира нов UUIDv4
                 uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -464,21 +462,39 @@
                     const v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
-                localStorage.setItem('deviceUUID', uuid);
+                
+                // Запазва го трайно (докато браузърът не изчисти LocalStorage)
+                localStorage.setItem(LS_UUID, uuid);
+                console.log('Нов UUID генериран:', uuid); 
+            } else {
+                console.log('Съществуващ UUID зареден:', uuid);
             }
+            
             return uuid;
         }
 
+        // ==============================================================================
+        // ПОМОЩНИ ФУНКЦИИ
+        // ==============================================================================
+        function roundMoney(amount) {
+            return Math.round((amount + Number.EPSILON) * 100) / 100;
+        }
 
-        // -----------------------------------------------------
+
+        // ==============================================================================
         // ЛОГИКА ЗА ОТКЛЮЧВАНЕ (Apps Script)
-        // -----------------------------------------------------
+        // ==============================================================================
         function checkProStatus() {
             // Проверява само локалното състояние (за бързо зареждане)
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
             
             const fullLockOverlay = document.getElementById('fullLockOverlay');
             const lockedContent = document.getElementById('lockedContent'); 
+            
+            // Генерира/Взима UUID и го показва в конзолата за дебъгване
+            const uuid = getOrCreateUUID();
+            console.log("Current Device UUID:", uuid);
+
 
             if (isUnlocked) {
                 fullLockOverlay.style.display = 'none';
@@ -502,17 +518,18 @@
 
             // Временно съобщение по време на AJAX заявката
             document.getElementById('unlockKey').placeholder = "Проверка на кода... Моля, изчакайте.";
-            
+            document.querySelector('.lock-content .btn-calc').disabled = true;
+
             try {
                 // Изпращане на заявка към Apps Script (Вашия "сървър")
-                const url = `${API_ENDPOINT}?key=${unlockKey}&uuid=${uuid}`;
+                const url = `${API_ENDPOINT}?key=${encodeURIComponent(unlockKey)}&uuid=${encodeURIComponent(uuid)}`;
                 const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.status === 'success') {
                     // УСПЕШНО ОТКЛЮЧВАНЕ / Устройството вече е активирано
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'true');
-                    alert(`Успех! Приложението е отключено!`);
+                    alert(`Успех! Приложението е отключено! ${data.message}`);
                 } else {
                     // ГРЕШКА
                     alert(data.message || "Грешка при активирането. Пробвайте отново.");
@@ -526,12 +543,13 @@
             // Връщане на инпут полето в нормално състояние
             document.getElementById('unlockKey').value = ''; 
             document.getElementById('unlockKey').placeholder = "ВЪВЕДЕТЕ ВАШИЯ КОД ТУК"; 
+            document.querySelector('.lock-content .btn-calc').disabled = false;
             checkProStatus(); // Обновява статуса на заключване
         }
         
-        // -----------------------------------------------------
+        // ==============================================================================
         // ФУНКЦИИ ЗА ЗАПАЗВАНЕ НА НАЛИЧНОСТТА
-        // -----------------------------------------------------
+        // ==============================================================================
         function saveCashLimit() {
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
             
@@ -549,9 +567,9 @@
             }
         }
         
-        // -----------------------------------------------------
-        // *** КОРЕКТИРАН АЛГОРИТЪМ ЗА ИЗЧИСЛЯВАНЕ НА РЕСТОТО (ПОЗВОЛЯВА ДРОБНО ЕВРО) ***
-        // -----------------------------------------------------
+        // ==============================================================================
+        // КОРЕКТИРАН АЛГОРИТЪМ ЗА ИЗЧИСЛЯВАНЕ НА РЕСТОТО
+        // ==============================================================================
 
         function calculateResto() {
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
@@ -566,7 +584,6 @@
             let paidBgn = parseFloat(document.getElementById('paidBgn').value) || 0;
             
             let cashEurValue = document.getElementById('cashEur').value;
-            // Ако полето е празно, считаме, че имаме достатъчно евро
             let cashEurAvailable = cashEurValue === '' ? Infinity : parseFloat(cashEurValue); 
 
             let totalBillInLeva = (billEurInput * EURO_RATE);
@@ -595,17 +612,13 @@
             let finalEurToReturn = 0;
             let finalBgnToReturn = 0;
             
-            // 1. Изчисляване на цялото ресто в ЕВРО (включва и стотинките), както желахте
             let totalChangeEurDesired = roundMoney(totalChangeLeva / EURO_RATE);
             
-            // 2. Определяне колко евро РЕАЛНО ще върнем
             if (totalChangeEurDesired <= cashEurAvailable) {
-                // Имаме достатъчно евро за цялото ресто (дробно)
                 finalEurToReturn = totalChangeEurDesired;
-                finalBgnToReturn = 0; // Всичко е в евро
+                finalBgnToReturn = 0; 
                 
             } else {
-                // НЯМАМЕ достатъчно евро. Връщаме всичко, което имаме (cashEurAvailable)
                 finalEurToReturn = cashEurAvailable; 
 
                 let eurInLevaReturned = finalEurToReturn * EURO_RATE;
@@ -613,7 +626,6 @@
                 
                 finalBgnToReturn = roundMoney(remainingChangeInLeva);
 
-                // Показване на предупреждение
                 if (cashEurAvailable !== Infinity) {
                     document.getElementById('cashWarning').innerText = `ВНИМАНИЕ: Недостатъчно евро. Връщаш ${finalEurToReturn.toFixed(2)}€ и остатъка (${finalBgnToReturn.toFixed(2)} лв.) в лева.`;
                     document.querySelector('.results').style.color = "orange";
@@ -625,9 +637,9 @@
         }
 
 
-        // -----------------------------------------------------
+        // ==============================================================================
         // ФУНКЦИЯ ЗА ПЪЛНО НУЛИРАНЕ
-        // -----------------------------------------------------
+        // ==============================================================================
         function resetFields() {
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
 
@@ -650,5 +662,5 @@
             localStorage.removeItem('resto_cashEur');
         }
     </script>
-</body>
+    </body>
 </html>
