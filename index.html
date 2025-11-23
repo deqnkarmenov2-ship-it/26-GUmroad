@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BG РЕСТО: Калкулатор за € и лв</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS СТИЛОВЕ */
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: #f4f7f6; 
+            color: #333; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh;
+        }
+        .container { 
+            width: 95%; 
+            max-width: 400px; 
+            padding: 20px; 
+            background-color: #fff; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+            border-radius: 12px; 
+            margin-top: 20px; 
+            margin-bottom: 20px;
+        }
+        h1 { 
+            color: #007bff; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-size: 1.5em; 
+            border-bottom: 2px solid #007bff; 
+            padding-bottom: 10px;
+        }
+        .locked-content, #result { 
+            display: none; 
+        } 
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 700; 
+            color: #555; 
+        }
+        input[type="number"], input[type="text"], button { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 1em; 
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            transition: background-color 0.3s; 
+            font-weight: 700; 
+            margin-top: 10px; 
+        }
+        button:hover { 
+            background-color: #0056b3; 
+        }
+        #unlock-section { 
+            text-align: center; 
+            padding: 30px 0; 
+            border: 2px dashed #ff9800; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            background-color: #fff8e1; 
+        }
+        #unlock-section p { 
+            color: #ff9800; 
+            font-weight: 700; 
+            margin-bottom: 15px; 
+        }
+        .result-box { 
+            margin-top: 25px; 
+            padding: 15px; 
+            border-radius: 8px; 
+            background-color: #e8f5e9; 
+            border-left: 5px solid #4caf50; 
+        }
+        .result-box div { 
+            margin-bottom: 10px; 
+            font-size: 1.1em; 
+            font-weight: 700; 
+        }
+        .result-box span { 
+            color: #4caf50; 
+        }
+        #error-message {
+            color: red;
+            font-weight: 700;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BG РЕСТО: Калкулатор за € и лв</h1>
+
+        <div id="unlock-section">
+            <p>ПРИЛОЖЕНИЕТО Е ЗАКЛЮЧЕНО.</p>
+            <p>Въведете Вашия уникален код за активиране:</p>
+            <div class="form-group">
+                <input type="text" id="unlockKeyInput" placeholder="Вашият код от Gumroad/Payhip">
+            </div>
+            <button onclick="attemptUnlock()">АКТИВИРАЙ</button>
+            <p id="unlockMessage" style="font-size: 0.9em; margin-top: 10px; color: #007bff;">
+                Пробвайте кода, преди да го купите.
+            </p>
+            <p id="error-message"></p>
+        </div>
+
+        <div id="locked-content" class="locked-content">
+            <div class="form-group">
+                <label for="billEur">Сметка в Евро (€):</label>
+                <input type="number" id="billEur" value="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="billBgn">Сметка в Лева (лв):</label>
+                <input type="number" id="billBgn" value="0.00" step="0.01">
+            </div>
+            <hr>
+            <div class="form-group">
+                <label for="paidEur">Платено в Евро (€):</label>
+                <input type="number" id="paidEur" value="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="paidBgn">Платено в Лева (лв):</label>
+                <input type="number" id="paidBgn" value="0.00" step="0.01">
+            </div>
+            
+            <button onclick="calculateChange()">ИЗЧИСЛИ РЕСТО</button>
+
+            <div id="result" class="result-box">
+                <div>Връщаш Евро (€): <span id="resEur">0.00</span></div>
+                <div>Връщаш Лева (лв): <span id="resBgn">0.00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // *** ----------------------------------------------------- ***
+        // *** ФИНАЛЕН АДРЕС ЗА СИГУРНОСТ (Web App URL) ***
+        // *** ----------------------------------------------------- ***
+        const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbw6VwKLeQkfBPUy8Rj3C1hTM_QwCrlr6HxT3mhDZEHOo02xq5iLQLoqy1h-jaydd-PCKQ/exec"; 
+
+        const EXCHANGE_RATE = 1.95583;
+
+        // --- ФУНКЦИИ ЗА СИГУРНОСТ (UUID) ---
+        
+        // 1. Генерира или взима уникален ID на устройството
+        function getOrCreateUUID() {
+            let uuid = localStorage.getItem('deviceUUID');
+            if (!uuid) {
+                // Генерира нов UUIDv4
+                uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                localStorage.setItem('deviceUUID', uuid);
+            }
+            return uuid;
+        }
+
+        // 2. Опит за Отключване
+        async function attemptUnlock() {
+            const unlockKey = document.getElementById('unlockKeyInput').value.trim();
+            const uuid = getOrCreateUUID();
+            const messageElement = document.getElementById('error-message');
+            
+            if (!unlockKey) {
+                messageElement.textContent = "Моля, въведете Вашия код.";
+                return;
+            }
+
+            messageElement.textContent = "Проверка на кода... Моля, изчакайте.";
+            
+            try {
+                // Изпращане на заявка към Apps Script (Вашия "сървър")
+                const url = `${API_ENDPOINT}?key=${unlockKey}&uuid=${uuid}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // УСПЕШНО ОТКЛЮЧВАНЕ
+                    localStorage.setItem('isUnlocked', 'true');
+                    messageElement.textContent = "✅ Успешно активирано! Приложението е отключено.";
+                    setTimeout(initializeApp, 1500); // Забавяне преди показване на калкулатора
+                } else {
+                    // ГРЕШКА
+                    messageElement.textContent = data.message || "Грешка при активирането. Пробвайте отново.";
+                }
+
+            } catch (error) {
+                messageElement.textContent = "Грешка при свързване със сървъра. Проверете връзката си.";
+                console.error('API Error:', error);
+            }
+        }
+        
+        // --- ОСНОВНА ФУНКЦИЯ НА ПРИЛОЖЕНИЕТО ---
+
+        function calculateChange() {
+            const billEur = parseFloat(document.getElementById('billEur').value) || 0;
+            const billBgn = parseFloat(document.getElementById('billBgn').value) || 0;
+            const paidEur = parseFloat(document.getElementById('paidEur').value) || 0;
+            const paidBgn = parseFloat(document.getElementById('paidBgn').value) || 0;
+
+            // 1. Конвертиране на всичко към ЛЕВА за общата сметка и платената сума
+            const totalBillBgn = billBgn + (billEur * EXCHANGE_RATE);
+            const totalPaidBgn = paidBgn + (paidEur * EXCHANGE_RATE);
+
+            // 2. Изчисление на общото ресто (в Лева)
+            let totalChangeBgn = totalPaidBgn - totalBillBgn;
+
+            if (totalChangeBgn < 0) {
+                document.getElementById('resEur').textContent = "---";
+                document.getElementById('resBgn').textContent = "Недостатъчна сума!";
+                document.getElementById('result').style.backgroundColor = '#fce4e4'; 
+                document.getElementById('result').style.borderLeft = '5px solid #f44336';
+                document.getElementById('result').style.display = 'block';
+                return;
+            }
+
+            // 3. Разделяне на рестото обратно на Евро и Лева
+            
+            // Връщаме максималното възможно ресто в Евро (цяло число евро)
+            let changeEur = Math.floor(totalChangeBgn / EXCHANGE_RATE);
+            
+            // Остатъкът, който трябва да върнем в Лева
+            let changeBgn = totalChangeBgn - (changeEur * EXCHANGE_RATE);
+            
+            // Закръгляме левовете до втората цифра след десетичната запетая
+            changeBgn = Math.round(changeBgn * 100) / 100;
+            
+            // Корекция, ако закръгляването доведе до излишък от 1.95583+ лв.
+            if (changeBgn >= EXCHANGE_RATE) {
+                changeEur += Math.floor(changeBgn / EXCHANGE_RATE);
+                changeBgn = changeBgn % EXCHANGE_RATE;
+                changeBgn = Math.round(changeBgn * 100) / 100;
+            }
+
+            // 4. Показване на резултата
+            document.getElementById('resEur').textContent = changeEur.toFixed(2);
+            document.getElementById('resBgn').textContent = changeBgn.toFixed(2);
+            document.getElementById('result').style.backgroundColor = '#e8f5e9'; 
+            document.getElementById('result').style.borderLeft = '5px solid #4caf50';
+            document.getElementById('result').style.display = 'block';
+        }
+        
+        // 3. Инициализация на Приложението
+        function initializeApp() {
+            const isUnlocked = localStorage.getItem('isUnlocked');
+
+            if (isUnlocked === 'true') {
+                // Ако е отключено, скриваме секцията за отключване и показваме калкулатора
+                document.getElementById('unlock-section').style.display = 'none';
+                document.getElementById('locked-content').style.display = 'block';
+            } else {
+                // Ако не е отключено, показваме секцията за отключване
+                document.getElementById('unlock-section').style.display = 'block';
+                document.getElementById('locked-content').style.display = 'none';
+            }
+        }
+
+        // Стартираме проверката при зареждане на страницата
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Генерираме UUID, дори ако още не е отключено
+        getOrCreateUUID();
+
+    </script>
+</body>
+</html>
