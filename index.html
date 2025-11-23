@@ -20,13 +20,11 @@
     <meta name="application-name" content="BG РЕСТО">
 
     <style>
-        /* ОСНОВНИ ПРОМЕНИ ЗА ЦЯЛ ЕКРАН */
         html, body {
             height: 100%; 
             margin: 0;
             overflow: hidden; 
         }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f2f2f7;
@@ -57,7 +55,6 @@
             transition: opacity 0.3s;
         }
 
-        /* СТИЛ ЗА ГЛАВНАТА ИНСТРУКЦИЯ */
         .instruction {
             font-size: 24px; 
             font-weight: bold;
@@ -67,7 +64,6 @@
             padding-top: 15px; 
         }
         
-        /* НОВ СТИЛ ЗА ЗАКЛЮЧВАНЕ НА ЦЯЛОТО ПРИЛОЖЕНИЕ */
         .full-lock-overlay {
             position: absolute;
             top: 0; 
@@ -91,7 +87,6 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* --- НОВ СТИЛ ЗА КЛИКАЕМИЯ ТЕКСТ С КОД --- */
         .code-link {
             text-decoration: none; 
             color: inherit; 
@@ -100,7 +95,6 @@
             font-weight: 500;
         }
         
-        /* Останалите стилове за инпути и бутони */
         .cash-section {
             width: 100%;
             border-top: 1px solid #e0e0e0;
@@ -148,7 +142,6 @@
             margin: 0;
         }
 
-        /* Стил за червения плейсхолдър/въведен текст */
         #unlockKey::placeholder { 
             color: #d93025 !important;
             opacity: 1; 
@@ -157,8 +150,6 @@
             color: #d93025 !important;
             font-weight: bold;
         }
-        
-        /* --- НОВ СТИЛОВЕ ЗА ПОДРАВНЯВАНЕ НА БУТОНИТЕ В ЗАКЛЮЧЕНИЯ ЕКРАН --- */
         
         .btn-calc, .btn-calc-pink, .btn-reset { 
             background-color: #158062; 
@@ -181,7 +172,6 @@
             background-color: #0f5f49;
         }
         
-        /* Червен бутон за Отключване/Купи */
         .btn-unlock-buy {
             background-color: #d93025 !important; 
             color: white;
@@ -201,7 +191,6 @@
             box-sizing: border-box; 
         }
         
-        /* КОРЕКЦИЯ: ИЗПОЛЗВАМЕ ТОЗИ СТИЛ, ЗА ДА ПОДРАВНИМ БУТОНА ЗА ПОТВЪРЖДЕНИЕ КЪМ БУТОНА ЗА ОТКЛЮЧВАНЕ */
         .lock-content .btn-calc {
             margin-top: 10px; 
             margin-bottom: 0; 
@@ -211,7 +200,6 @@
             background-color: #a8241d !important;
         }
         
-        /* НОВ СТИЛ ЗА МАЛКО ИНФО */
         .small-info {
             font-size: 12px;
             color: #555;
@@ -268,9 +256,6 @@
             background-color: #a8241d;
         }
         
-        /* ----------------------------------------------------- */
-        /* СТИЛОВЕ ЗА ИНСТАЛАЦИОННИЯ ПРОЗОРЕЦ (PWA Prompt) */
-        /* ----------------------------------------------------- */
         .install-prompt-modal {
             position: fixed;
             top: 0; 
@@ -379,7 +364,7 @@
         // АКТУАЛНИЯТ АДРЕС НА ВАШИЯ APPS SCRIPT:
         const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzxOl1nJm6D6tWO6EDnj_uh2sft_59AyFxycBEs4VZHMp1oCoOeKOFnnOo0Tw5AOEY3Zg/exec"; 
         
-        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript'; // Ключ за локален статус
+        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript'; 
         const EURO_RATE = 1.95583;
         const LS_INSTALLED_STATUS = 'pwa_installed'; 
 
@@ -456,7 +441,6 @@
         function getDeviceUUID() {
             let uuid = localStorage.getItem('deviceUUID');
             if (!uuid) {
-                // Генерира ново UUIDv4
                 uuid = 'uuid-' + Date.now() + Math.random().toString(16).slice(2);
                 localStorage.setItem('deviceUUID', uuid);
             }
@@ -468,7 +452,6 @@
         // ЛОГИКА ЗА ОТКЛЮЧВАНЕ (Apps Script)
         // -----------------------------------------------------
         function checkProStatus() {
-            // Проверява само локалното състояние (за бързо зареждане)
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
             
             const fullLockOverlay = document.getElementById('fullLockOverlay');
@@ -477,58 +460,53 @@
             if (isUnlocked) {
                 fullLockOverlay.style.display = 'none';
                 lockedContent.style.opacity = '1';
-                lockedContent.style.pointerEvents = 'auto'; // Активира кликането
+                lockedContent.style.pointerEvents = 'auto'; 
             } else {
                 fullLockOverlay.style.display = 'flex';
                 lockedContent.style.opacity = '0'; 
-                lockedContent.style.pointerEvents = 'none'; // Забранява кликането
+                lockedContent.style.pointerEvents = 'none'; 
             }
         }
         
-        // *** КОРЕКТИРАНА ФУНКЦИЯ ЗА СВЪРЗВАНЕ С APPS SCRIPT ***
+        // *** ФУНКЦИЯ ЗА СВЪРЗВАНЕ С APPS SCRIPT ***
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
-            document.getElementById('unlockKey').value = ''; // Изчистваме полето веднага
+            document.getElementById('unlockKey').value = ''; 
             
             if (!unlockKey) {
                 alert("Моля, въведете Вашия код.");
                 return;
             }
 
-            const deviceUUID = getDeviceUUID(); // Вземаме или генерираме UUID
+            const deviceUUID = getDeviceUUID(); 
             
             try {
                 // Изпращане на заявка към Apps Script (Вашия "сървър")
                 const url = `${API_ENDPOINT}?key=${unlockKey}&uuid=${deviceUUID}`;
                 
-                // ВАЖНО: Използваме { cache: 'no-store' } за да избегнем кеширането на старите отговори
                 const response = await fetch(url, { cache: 'no-store' }); 
                 
                 if (!response.ok) {
-                    // Ако Apps Script върне 4xx/5xx статус
                     throw new Error(`Неуспешен отговор от Apps Script (${response.status})`);
                 }
                 
-                // Опитваме се да парснем JSON отговора
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // УСПЕШНО ОТКЛЮЧВАНЕ / ПРЕ-АСОЦИИРАНЕ
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'true');
                     alert(`Успех! ${data.message}`);
                 } else {
-                    // ГРЕШКА (Невалиден ключ, вече използван от друго устройство и т.н.)
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'false');
                     alert(`Грешка: ${data.message || "Грешка при активирането. Пробвайте отново."}`);
                 }
 
             } catch (error) {
                 console.error('API Connection Error:', error);
-                // Показваме грешка, която предполага проблем с Apps Script публикуването/авторизацията
-                alert(`Грешка при свързване със сървъра. Това често означава, че Apps Script не е публикуван или е нужна оторизация. Проверете конзолата на браузъра за повече детайли.`);
+                // Показваме грешката, като подсказваме къде е проблемът
+                alert(`Грешка при свързване със сървъра. Това често означава, че Apps Script не е публикуван, не е оторизиран или URL адресът е грешен. Проверете конзолата на браузъра за повече детайли.`);
             }
             
-            checkProStatus(); // Обновява статуса на заключване
+            checkProStatus(); 
         }
         
         // -----------------------------------------------------
