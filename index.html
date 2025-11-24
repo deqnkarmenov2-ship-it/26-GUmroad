@@ -357,7 +357,7 @@
         <div class="prompt-content">
             <p>Инсталирай приложението на телефона си за бърз достъп!</p>
             <button id="installButton" class="btn-calc">Инсталирай</button>
-            <button id="dismissButton" class="btn-reset">Затвори</button>
+            <button id="dismissButton" class="btn-reset">Скрий завинаги</button>
         </div>
     </div>
     
@@ -372,6 +372,8 @@
         const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript';
         const LS_UUID = 'device_uuid';
         const COOKIE_UUID = 'uuid_cookie'; 
+        // *** НОВ КЛЮЧ: Записва, че потребителят не иска да вижда промпта повече
+        const LS_INSTALL_DISMISSED = 'pwa_dismissed_permanently'; 
         
         let deferredPrompt; 
         const installPrompt = document.getElementById('installPrompt');
@@ -406,6 +408,8 @@
             window.addEventListener('appinstalled', () => {
                 installPrompt.style.display = 'none';
                 deferredPrompt = null;
+                // Ако е инсталирано, изтриваме статуса за отхвърляне
+                localStorage.removeItem(LS_INSTALL_DISMISSED); 
             });
         }
         
@@ -421,8 +425,10 @@
             }
         });
         
+        // *** КОРЕКЦИЯ: Логика за Скриване ЗАВИНАГИ (чрез localStorage)
         dismissButton.addEventListener('click', () => {
-            // Просто скрива модала, което позволява повторно показване при рефреш.
+            // Записваме статус в LS, което гарантира, че няма да се покаже повече
+            localStorage.setItem(LS_INSTALL_DISMISSED, 'true');
             installPrompt.style.display = 'none';
         });
         
@@ -557,32 +563,18 @@
             }
         }
         
-        // *** НОВА ФУНКЦИЯ ЗА ПЕРМАНЕНТНО ПОКАЗВАНЕ С ПРОВЕРКИ ***
+        // *** КОРЕКЦИЯТА: Проверява дали промптът е бил скрит завинаги
         function showPermanentInstallPrompt() {
-            // 1. Проверяваме дали вече е инсталирано (standalone режим)
             const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+            const isDismissed = localStorage.getItem(LS_INSTALL_DISMISSED) === 'true';
 
-            if (isInstalled) {
-                // Ако вече е инсталирано, не правим нищо
+            // Използваме deferredPrompt, за да сме сигурни, че браузърът поддържа PWA
+            // и показваме модала, само ако не е инсталиран и не е бил скрит завинаги
+            if (deferredPrompt && !isInstalled && !isDismissed) {
+                installPrompt.style.display = 'block';
+            } else {
                 installPrompt.style.display = 'none';
-                return;
             }
-            
-            // 2. Дефинираме функция, която се опитва да покаже прозореца
-            function attemptToShow() {
-                if (deferredPrompt) {
-                    // Ако deferredPrompt е налично, показваме модала и спираме проверката
-                    installPrompt.style.display = 'block';
-                    clearInterval(checkInterval);
-                }
-                // Ако не е налично, интервалът ще опита отново след 500ms
-            }
-
-            // 3. Изпълняваме първи опит веднага, в случай че deferredPrompt е вече налично
-            attemptToShow();
-
-            // 4. Задаваме интервал за повтаряне на опита, докато prompt-ът не се появи
-            const checkInterval = setInterval(attemptToShow, 500); 
         }
         
         async function unlockFeature() { 
