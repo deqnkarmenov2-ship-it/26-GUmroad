@@ -348,9 +348,11 @@
                     Необходим е <span style='color: #d93025; font-weight: bold;'>КОД</span> за достъп до калкулатора.
                 </a>
                 
-                <p style="font-size: 14px; margin: 15px 0 5px 0;">Въведи код за отключване:</p> 
+                <p style="font-size: 14px; margin: 15px 0 5px 0;">Въведи данни за отключване:</p> 
                 
                 <input type="text" id="unlockKey" placeholder="ВЪВЕДЕТЕ ВАШИЯ КОД ТУК" style="margin-bottom: 10px;"/> 
+                <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ ИМЕЙЛА ОТ ПОКУПКАТА" style="margin-bottom: 10px;"/> 
+                
                 <button class="btn-calc" onclick="unlockFeature()">ПОТВЪРДИ КЛЮЧ</button> 
 
                 <a href="https://docs.google.com/spreadsheets/d/1yuRpxPF9e1_FXMKCRvuH20lEH7QdCcT6e92dPj20IjI/edit?gid=0#gid=0" class="btn-unlock-buy" target="_blank">
@@ -374,12 +376,15 @@
     
     <script>
         // ==============================================================================
-        // КОНСТАНТИ - УВЕРЕТЕ СЕ, ЧЕ API_ENDPOINT Е АКТУАЛЕН
+        // КОНСТАНТИ - ВАШИЯТ АДРЕС Е ВГРАДЕН ТУК
         // ==============================================================================
         const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzEVc1FWkjDkIBmBUs6ubp09bFD48vyRB6zlOshR3bJhqU3VP6pfyb7flOdqwPEHSKc/exec"; 
-        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript'; 
-        const LS_UUID = 'deviceUUID'; 
         const EURO_RATE = 1.95583;
+        
+        // Ключове за LocalStorage
+        const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript';
+        const LS_UUID = 'device_uuid';
+        const COOKIE_UUID = 'uuid_cookie'; 
 
         let deferredPrompt; 
         const installPrompt = document.getElementById('installPrompt');
@@ -388,11 +393,10 @@
         const LS_INSTALLED_STATUS = 'pwa_installed'; 
         
         // ==============================================================================
-        // PWA - ЛОГИКА ЗА ОФЛАЙН И ИНСТАЛАЦИЯ (Без промяна)
+        // PWA - ЛОГИКА ЗА ОФЛАЙН И ИНСТАЛАЦИЯ 
         // ==============================================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                // 1. Регистрация на Service Worker
                 navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker регистрацията е успешна!');
@@ -402,7 +406,6 @@
                     });
             });
             
-            // 2. Прихващане на събитието, което позволява инсталация
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -420,7 +423,6 @@
                 }, 15000); 
             });
             
-            // 3. Обработка след успешна инсталация
             window.addEventListener('appinstalled', () => {
                 installPrompt.style.display = 'none';
                 localStorage.setItem(LS_INSTALLED_STATUS, 'true');
@@ -428,7 +430,6 @@
             });
         }
         
-        // 4. Клик на бутона "Инсталирай"
         installButton.addEventListener('click', () => {
             if (deferredPrompt) {
                 installPrompt.style.display = 'none';
@@ -443,48 +444,59 @@
             }
         });
         
-        // 5. Клик на бутона "Затвори"
         dismissButton.addEventListener('click', () => {
             installPrompt.style.display = 'none';
         });
 
         
         // ==============================================================================
-        // ФУНКЦИИ ЗА UUID (ФИНАЛНА ЛОГИКА: localStorage + Cookie Fallback)
+        // ФУНКЦИИ ЗА UUID (МАКСИМАЛНА УСТОЙЧИВОСТ: localStorage + Cookie Fallback)
         // ==============================================================================
-        function getOrCreateUUID() {
-            const cookieName = 'deviceUUID_C';
-            let uuid = localStorage.getItem(LS_UUID);
-
-            // 1. Проверка в LocalStorage (Основен метод)
-            if (uuid) {
-                console.log('Съществуващ UUID зареден от LocalStorage:', uuid);
-                return uuid;
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
             }
+            // SameSite=Lax и secure се използват за модерен браузър
+            document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; secure"; 
+        }
 
-            // 2. Проверка в Cookie (Резервен метод - Fallback)
-            // Регулярният израз търси: начало на низ ИЛИ интервал, последван от 'deviceUUID_C=', 
-            // и след това взима всичко до точка и запетая.
-            const cookieMatch = document.cookie.match(new RegExp('(^| )' + cookieName + '=([^;]+)'));
-            if (cookieMatch) {
-                uuid = cookieMatch[2];
-                localStorage.setItem(LS_UUID, uuid); // Мигрира обратно към LocalStorage
-                console.log('UUID зареден от Cookie и мигриран към LocalStorage:', uuid);
-                return uuid;
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
             }
+            return null;
+        }
 
-            // 3. Генериране на нов UUID
-            uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, 
+                      v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
 
-            // Записва на двете места за максимална устойчивост
+        function getOrCreateUUID() {
+            let uuid = localStorage.getItem(LS_UUID);
+            
+            if (!uuid) {
+                uuid = getCookie(COOKIE_UUID);
+            }
+            
+            if (!uuid) {
+                uuid = generateUUID();
+            }
+            
+            // Запазваме във всяко от двете хранилища за максимална устойчивост
             localStorage.setItem(LS_UUID, uuid);
-            // Записва Cookie, което изтича след много дълго време (31.12.9999 г.)
-            document.cookie = `${cookieName}=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/;`;
-            console.log('Нов UUID генериран и записан:', uuid);
+            setCookie(COOKIE_UUID, uuid, 365 * 10); // Запазваме за 10 години
+            
             return uuid;
         }
 
@@ -501,13 +513,11 @@
         // ЛОГИКА ЗА ОТКЛЮЧВАНЕ (Apps Script)
         // ==============================================================================
         function checkProStatus() {
-            // Проверява само локалното състояние (за бързо зареждане)
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
             
             const fullLockOverlay = document.getElementById('fullLockOverlay');
             const lockedContent = document.getElementById('lockedContent'); 
             
-            // Генерира/Взима UUID и го показва в конзолата за дебъгване
             const uuid = getOrCreateUUID();
             console.log("Current Device UUID:", uuid);
 
@@ -525,30 +535,41 @@
         
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
+            // НОВО: Взимане на имейла и преобразуване в малки букви
+            const userEmail = document.getElementById('userEmail').value.trim().toLowerCase(); 
             const uuid = getOrCreateUUID();
             
-            if (!unlockKey) {
-                alert("Моля, въведете Вашия код.");
+            if (!unlockKey || !userEmail) {
+                alert("Моля, въведете Вашия код и Имейл.");
                 return;
             }
 
             // Временно съобщение по време на AJAX заявката
-            document.getElementById('unlockKey').placeholder = "Проверка на кода... Моля, изчакайте.";
+            document.getElementById('unlockKey').placeholder = "Проверка на кода и имейла... Моля, изчакайте.";
             document.querySelector('.lock-content .btn-calc').disabled = true;
 
             try {
-                // Изпращане на заявка към Apps Script (Вашия "сървър")
-                const url = `${API_ENDPOINT}?key=${encodeURIComponent(unlockKey)}&uuid=${encodeURIComponent(uuid)}`;
+                // ИЗПРАЩАНЕ НА КОД, ИМЕЙЛ И UUID КЪМ APPS SCRIPT
+                const url = `${API_ENDPOINT}?key=${encodeURIComponent(unlockKey)}&email=${encodeURIComponent(userEmail)}&uuid=${encodeURIComponent(uuid)}`;
                 const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // УСПЕШНО ОТКЛЮЧВАНЕ / Устройството вече е активирано
+                    // УСПЕШНО ОТКЛЮЧВАНЕ / Устройството вече е регистрирано
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'true');
                     alert(`Успех! Приложението е отключено! ${data.message}`);
                 } else {
                     // ГРЕШКА
-                    alert(data.message || "Грешка при активирането. Пробвайте отново.");
+                    
+                    // Проверяваме дали грешката е за блокиране/нулиране на кода (5 активации/72 часа)
+                    if (data.message.includes('Кодът е блокиран') || data.message.includes('Кодът вече е използван 5 пъти')) {
+                         alert(`Грешка: ${data.message} \n\n Ако кодът Ви е работил преди, той е временно блокиран, но Вашето устройство остава активирано. Пробвайте отново след 72 часа само ако се нуждаете от нова активация.`);
+                    } else {
+                         // Всички други грешки (Невалиден код, не е намерен и т.н.)
+                         alert(data.message || "Грешка при активирането. Пробвайте отново.");
+                         // Ако кодът е невалиден, заключваме локално
+                         localStorage.removeItem(LS_UNLOCKED_STATUS);
+                    }
                 }
 
             } catch (error) {
@@ -556,8 +577,9 @@
                 console.error('API Error:', error);
             }
             
-            // Връщане на инпут полето в нормално състояние
+            // Връщане на инпут полетата в нормално състояние
             document.getElementById('unlockKey').value = ''; 
+            document.getElementById('userEmail').value = ''; 
             document.getElementById('unlockKey').placeholder = "ВЪВЕДЕТЕ ВАШИЯ КОД ТУК"; 
             document.querySelector('.lock-content .btn-calc').disabled = false;
             checkProStatus(); // Обновява статуса на заключване
