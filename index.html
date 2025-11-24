@@ -173,7 +173,7 @@
             margin-bottom: 0; 
         }
         .btn-reset {
-            background-color: #d93025; 
+            background-color: #d93025; /* Червен цвят */
             color: white;
             border: none;
             width: 100%;
@@ -216,14 +216,13 @@
         }
 
         /* ----------------------------------------------------- */
-        /* НОВИ СТИЛОВЕ ЗА ИНЛАЙН ИНСТАЛАЦИОНЕН БАНЕР (PWA Prompt) */
+        /* СТИЛОВЕ ЗА ИНЛАЙН ИНСТАЛАЦИОНЕН БАНЕР (PWA Prompt) */
         /* ----------------------------------------------------- */
         .install-prompt-modal {
-            /* Премахвам position: fixed */
             width: 100%;
-            background-color: #158062; /* Зелен фон */
+            background-color: #158062;
             padding: 10px 15px;
-            margin-bottom: 20px; /* Отстояние от инпутите */
+            margin-bottom: 20px;
             border-radius: 12px;
             box-sizing: border-box;
             color: white;
@@ -242,7 +241,7 @@
             margin: 5px 1% 0;
             display: inline-block;
             box-sizing: border-box;
-            padding: 8px; /* Намален padding */
+            padding: 8px;
             font-size: 14px;
         }
         
@@ -251,10 +250,13 @@
             background-color: white; 
             color: #158062;
         }
+        
+        /* *** КОРЕКЦИЯ: Бутонът "Отказ" да е червен като .btn-reset *** */
         #installPrompt #dismissButton {
-            background-color: transparent; 
-            border: 1px solid white;
+            background-color: #d93025; /* Червен фон */
             color: white;
+            border: none;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -271,7 +273,7 @@
                 <div class="prompt-content">
                     <p>Инсталирай приложението на телефона си за бърз достъп!</p>
                     <button id="installButton" class="btn-calc">Инсталирай</button>
-                    <button id="dismissButton" class="btn-reset">Скрий завинаги</button>
+                    <button id="dismissButton" class="btn-reset">ОТКАЗ</button>
                 </div>
             </div>
             
@@ -335,6 +337,8 @@
         const LS_UNLOCKED_STATUS = 'isProUnlocked_AppsScript';
         const LS_UUID = 'device_uuid';
         const COOKIE_UUID = 'uuid_cookie'; 
+        // ТОЗИ КЛЮЧ ОСТАВА, ЗА ДА ПОЗВОЛЯВАМЕ ВЪЗМОЖНОСТТА ЗА СКРИВАНЕ ЗАВИНАГИ,
+        // НО НЯМА ДА ГО ИЗПОЛЗВАМЕ ПРИ НАТИСКАНЕ НА "ОТКАЗ".
         const LS_INSTALL_DISMISSED = 'pwa_dismissed_permanently'; 
         
         let deferredPrompt; 
@@ -386,14 +390,16 @@
             }
         });
         
-        // Логика за Скриване ЗАВИНАГИ (чрез localStorage)
+        // *** КОРЕКЦИЯ: Логика за "ОТКАЗ" (скрива, но НЕ записва в LS)
         dismissButton.addEventListener('click', () => {
-            localStorage.setItem(LS_INSTALL_DISMISSED, 'true');
+            // *** ПРЕМАХНАТ РЕДЪТ ЗА СКРИВАНЕ ЗАВИНАГИ
+            // localStorage.setItem(LS_INSTALL_DISMISSED, 'true');
             installPrompt.style.display = 'none';
+            // Прозорецът ще се появи отново при следващ рефреш, ако е налично PWA
         });
         
         // ==============================================================================
-        // ФУНКЦИИ ЗА UUID (Пропуснати за краткост, предполагат се, че са налични)
+        // ФУНКЦИИ ЗА UUID
         // ==============================================================================
         function setCookie(name, value, days) {
             let expires = "";
@@ -487,7 +493,6 @@
                 lockedContent.style.opacity = '1';
                 lockedContent.style.pointerEvents = 'auto'; 
                 
-                // *** АКТИВИРАНЕ НА БАНЕРА ***
                 showPermanentInstallPrompt();
             } else {
                 fullLockOverlay.style.display = 'flex';
@@ -496,13 +501,15 @@
             }
         }
         
-        // *** ФУНКЦИЯ ЗА ПОКАЗВАНЕ НА ИНСТАЛАЦИОННИЯ БАНЕР
         function showPermanentInstallPrompt() {
             const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-            const isDismissed = localStorage.getItem(LS_INSTALL_DISMISSED) === 'true';
+            
+            // Проверяваме дали е бил натиснат старият бутон "Скрий завинаги"
+            const isDismissedPermanently = localStorage.getItem(LS_INSTALL_DISMISSED) === 'true';
 
-            // Показва се само ако PWA е налично, не е инсталирано и не е било скрито завинаги
-            if (deferredPrompt && !isInstalled && !isDismissed) {
+            // Банерът се показва, ако PWA е налично, не е инсталирано 
+            // И не е бил натиснат старият бутон "Скрий завинаги"
+            if (deferredPrompt && !isInstalled && !isDismissedPermanently) {
                 installPrompt.style.display = 'block';
             } else {
                 installPrompt.style.display = 'none';
@@ -553,7 +560,7 @@
         }
         
         // ==============================================================================
-        // ЛОГИКА ЗА RESTO (Пропусната за краткост, предполагат се, че са налични)
+        // ЛОГИКА ЗА RESTO
         // ==============================================================================
         function saveCashLimit() {
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
