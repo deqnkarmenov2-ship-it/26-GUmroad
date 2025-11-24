@@ -360,8 +360,9 @@
                 
                 <p style="font-size: 14px; margin: 15px 0 5px 0;">Въведи данни за отключване:</p> 
                 
-                <input type="text" id="unlockKey" placeholder="ВЪВЕДЕТЕ ВАШИЯ КОД ТУК" style="margin-bottom: 10px;"/> 
                 <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ EMAIL" style="margin-bottom: 10px;"/> 
+                
+                <input type="text" id="unlockKey" placeholder="ВЪВЕДЕТЕ ВАШИЯ КОД ТУК" style="margin-bottom: 10px;"/> 
                 
                 <button class="btn-calc" onclick="unlockFeature()">ПОТВЪРДИ КЛЮЧ</button> 
 
@@ -386,7 +387,7 @@
     
     <script>
         // ==============================================================================
-        // КОНСТАНТИ - ВАШИЯТ АДРЕС Е ВГРАДЕН ТУК
+        // КОНСТАНТИ - ВАШИЯТ APPS SCRIPT URL Е ВГРАДЕН ТУК
         // ==============================================================================
         const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzEVc1FWkjDkIBmBUs6ubp09bFD48vyRB6zlOshR3bJhqU3VP6pfyb7flOdqwPEHSKc/exec"; 
         const EURO_RATE = 1.95583;
@@ -403,7 +404,7 @@
         const LS_INSTALLED_STATUS = 'pwa_installed'; 
         
         // ==============================================================================
-        // PWA - ЛОГИКА ЗА ОФЛАЙН И ИНСТАЛАЦИЯ 
+        // PWA - ЛОГИКА ЗА ОФЛАЙН И ИНСТАЛАЦИЯ (Изисква service-worker.js) 
         // ==============================================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -461,7 +462,7 @@
 
         
         // ==============================================================================
-        // ФУНКЦИИ ЗА UUID (МАКСИМАЛНА УСТОЙЧИВОСТ: localStorage + Cookie Fallback)
+        // ФУНКЦИИ ЗА UUID 
         // ==============================================================================
         function setCookie(name, value, days) {
             let expires = "";
@@ -505,7 +506,7 @@
             
             // Запазваме във всяко от двете хранилища за максимална устойчивост
             localStorage.setItem(LS_UUID, uuid);
-            setCookie(COOKIE_UUID, uuid, 365 * 10); // Запазваме за 10 години
+            setCookie(COOKIE_UUID, uuid, 365 * 10); 
             
             return uuid;
         }
@@ -535,24 +536,25 @@
             if (isUnlocked) {
                 fullLockOverlay.style.display = 'none';
                 lockedContent.style.opacity = '1';
-                lockedContent.style.pointerEvents = 'auto'; // Активира кликането
+                lockedContent.style.pointerEvents = 'auto'; 
             } else {
                 fullLockOverlay.style.display = 'flex';
                 lockedContent.style.opacity = '0'; 
-                lockedContent.style.pointerEvents = 'none'; // Забранява кликането
+                lockedContent.style.pointerEvents = 'none'; 
             }
         }
         
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
-            // Взимане на имейла и преобразуване в малки букви
             const userEmail = document.getElementById('userEmail').value.trim().toLowerCase(); 
             const uuid = getOrCreateUUID();
             
-            if (!unlockKey || !userEmail) {
-                alert("Моля, въведете Вашия код и EMAIL.");
+            // *** КОРЕКЦИЯ: Имейлът вече не е задължителен тук (за да работи Master Key без имейл) ***
+            if (!unlockKey) {
+                alert("Моля, въведете Вашия код.");
                 return;
             }
+            // ------------------------------------------------------------------------------------
 
             // Временно съобщение по време на AJAX заявката
             document.getElementById('unlockKey').placeholder = "Проверка на кода и имейла... Моля, изчакайте.";
@@ -570,14 +572,10 @@
                     alert(`Успех! Приложението е отключено! ${data.message}`);
                 } else {
                     // ГРЕШКА
-                    
-                    // Проверяваме дали грешката е за блокиране/нулиране на кода (5 активации/72 часа)
                     if (data.message.includes('Кодът е блокиран') || data.message.includes('Кодът вече е използван 5 пъти')) {
                          alert(`Грешка: ${data.message} \n\n Ако кодът Ви е работил преди, той е временно блокиран, но Вашето устройство остава активирано. Пробвайте отново след 72 часа само ако се нуждаете от нова активация.`);
                     } else {
-                         // Всички други грешки (Невалиден код, не е намерен и т.н.)
                          alert(data.message || "Грешка при активирането. Пробвайте отново.");
-                         // Ако кодът е невалиден, заключваме локално
                          localStorage.removeItem(LS_UNLOCKED_STATUS);
                     }
                 }
@@ -596,7 +594,7 @@
         }
         
         // ==============================================================================
-        // ФУНКЦИИ ЗА ЗАПАЗВАНЕ НА НАЛИЧНОСТТА
+        // ФУНКЦИИ ЗА ЗАПАЗВАНЕ НА НАЛИЧНОСТТА И АЛГОРИТЪМ ЗА РЕСТОТО
         // ==============================================================================
         function saveCashLimit() {
             const isUnlocked = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
@@ -614,10 +612,6 @@
                 document.getElementById('cashEur').value = '';
             }
         }
-        
-        // ==============================================================================
-        // АЛГОРИТЪМ ЗА ИЗЧИСЛЯВАНЕ НА РЕСТОТО
-        // ==============================================================================
 
         function calculateResto() {
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
@@ -642,14 +636,12 @@
             document.getElementById('cashWarning').innerText = ''; 
             document.querySelector('.results').style.color = "black";
 
-            // Проверка за недостиг
             if (rawChangeLeva < -0.009) {
                 document.getElementById('resEur').innerText = "Недостиг!";
                 document.getElementById('resBgn').innerText = roundMoney(Math.abs(rawChangeLeva)).toFixed(2) + " лв";
                 document.querySelector('.results').style.color = "#d93025"; 
                 return;
             }
-            // Ако рестото е 0
             if (rawChangeLeva < 0.009) {
                  document.getElementById('resEur').innerText = "0.00";
                  document.getElementById('resBgn').innerText = "0.00";
@@ -684,10 +676,6 @@
             document.getElementById('resBgn').innerText = finalBgnToReturn.toFixed(2);
         }
 
-
-        // ==============================================================================
-        // ФУНКЦИЯ ЗА ПЪЛНО НУЛИРАНЕ
-        // ==============================================================================
         function resetFields() {
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
 
