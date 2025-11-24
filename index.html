@@ -1,3 +1,30 @@
+<div class="content" id="lockedContent">
+    
+    <h3 style="font-size: 20px; font-weight: bold; color: #158062; margin-bottom: 5px; margin-top: 0;">BG РЕСТО калкулатор</h3>
+            
+    <div class="instruction">
+        Въведи сметката и сумата,<br> с която е платено
+    </div>
+    
+    ```
+
+Ето и промененият бутон за отключване:
+
+```html
+<div class="full-lock-overlay" id="fullLockOverlay" style="display:none;">
+    <div class="lock-content">
+        
+        <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="margin-top: 0; margin-bottom: 25px; background-color: #158062 !important;">
+            АКТИВИРАЙ ЗА 4.99 €
+        </a>
+        
+        ```
+
+---
+
+## 📄 Пълен HTML Файл с промените
+
+```html
 <!DOCTYPE html>
 <html lang="bg">
 <head>
@@ -300,6 +327,9 @@
     <div class="app-container">
         
         <div class="content" id="lockedContent">
+            
+            <h3 style="font-size: 20px; font-weight: bold; color: #158062; margin-bottom: 5px; margin-top: 0;">BG РЕСТО калкулатор</h3>
+
             <div class="instruction">
                 Въведи сметката и сумата,<br> с която е платено
             </div>
@@ -334,7 +364,7 @@
             <div class="lock-content">
                 
                 <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="margin-top: 0; margin-bottom: 25px; background-color: #158062 !important;">
-                    КУПИ ЗА 4.99 €
+                    АКТИВИРАЙ ЗА 4.99 €
                 </a>
                 
                 <p style="font-size: 16px; margin: 0 0 25px 0; line-height: 1.4; color: black; font-weight: 500;">
@@ -347,7 +377,7 @@
                 
                 <button class="btn-calc btn-unlock-buy" onclick="unlockFeature()" style="margin-top: 10px; margin-bottom: 0;">АКТИВИРАЙ</button> 
 
-                </div>
+            </div>
         </div>
         </div>
     
