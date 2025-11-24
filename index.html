@@ -147,8 +147,6 @@
             -webkit-appearance: none;
             margin: 0;
         }
-
-        /* СТИЛОВЕТЕ ЗА ЧЕРВЕН ТЕКСТ В ПОЛЕТАТА СА ПРЕМАХНАТИ */
         
         /* --- НОВИ СТИЛОВЕ ЗА ПОДРАВНЯВАНЕ НА БУТОНИТЕ В ЗАКЛЮЧЕНИЯ ЕКРАН --- */
         
@@ -340,20 +338,16 @@
                 </a>
                 
                 <p style="font-size: 16px; margin: 0 0 25px 0; line-height: 1.4; color: black; font-weight: 500;">
-                    Моля, въведете вашия <span style='color: #d93025; font-weight: bold;'>EMAIL</span> и <span style='color: #d93025; font-weight: bold;'>УНИКАЛЕН КОД</span>, получен след покупка.
+                    Моля, въведете вашия **EMAIL** и **УНИКАЛЕН КОД**, получен след покупка.
                 </p>
                 
                 <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ EMAIL" style="margin-bottom: 10px;"/> 
                 
                 <input type="text" id="unlockKey" placeholder="ВЪВЕДЕТЕ ВАШИЯ КОД ТУК" style="margin-bottom: 10px;"/> 
                 
-                <button class="btn-calc" onclick="unlockFeature()">ПОТВЪРДИ КЛЮЧ</button> 
+                <button class="btn-calc btn-unlock-buy" onclick="unlockFeature()" style="margin-top: 10px; margin-bottom: 0;">АКТИВИРАЙ</button> 
 
-                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="background-color: #d93025 !important;">
-                    ВЪПРОСИ? СВЪРЖИ СЕ С НАС.
-                </a>
-                
-                <p class="small-info">
+                <p class="small-info" style="margin-top: 20px;">
                     Използвайте горния бутон, за да получите Вашия код.
                 </p>
             </div>
@@ -401,21 +395,10 @@
                     });
             });
             
+            // Записваме промпта, но го показваме само след активация
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-
-                const isInstalled = localStorage.getItem(LS_INSTALLED_STATUS) === 'true' || window.matchMedia('(display-mode: standalone)').matches;
-                
-                if (isInstalled) {
-                    return;
-                }
-
-                installPrompt.style.display = 'block';
-                
-                setTimeout(() => {
-                    installPrompt.style.display = 'none';
-                }, 15000); 
             });
             
             window.addEventListener('appinstalled', () => {
@@ -527,17 +510,28 @@
             }
         }
         
+        // ФУНКЦИЯ ЗА ПОКАЗВАНЕ НА ИНСТАЛАЦИОННИЯ ПРОЗОРЕЦ (след успешна активация)
+        function showInstallPrompt() {
+             const isInstalled = localStorage.getItem(LS_INSTALLED_STATUS) === 'true' || window.matchMedia('(display-mode: standalone)').matches;
+                
+             if (!isInstalled && deferredPrompt) {
+                 installPrompt.style.display = 'block';
+                
+                 setTimeout(() => {
+                     installPrompt.style.display = 'none';
+                 }, 15000); 
+             }
+        }
+
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim().toLowerCase(); 
             const uuid = getOrCreateUUID();
             
-            // КОРЕКЦИЯ: Имейлът вече не е задължителен тук (за да работи Master Key без имейл)
             if (!unlockKey) {
                 alert("Моля, въведете Вашия код.");
                 return;
             }
-            // ------------------------------------------------------------------------------------
 
             // Временно съобщение по време на AJAX заявката
             document.getElementById('unlockKey').placeholder = "Проверка на кода и имейла... Моля, изчакайте.";
@@ -550,9 +544,10 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // УСПЕШНО ОТКЛЮЧВАНЕ / Устройството вече е регистрирано
+                    // УСПЕШНО ОТКЛЮЧВАНЕ
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'true');
                     alert(`Успех! Приложението е отключено! ${data.message}`);
+                    showInstallPrompt(); // <--- ПОКАЗВАНЕ НА ИНСТАЛАЦИЯТА ТУК
                 } else {
                     // ГРЕШКА
                     if (data.message.includes('Кодът е блокиран') || data.message.includes('Кодът вече е използван 5 пъти')) {
