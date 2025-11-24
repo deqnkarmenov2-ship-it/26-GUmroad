@@ -148,12 +148,22 @@
             margin: 0;
         }
 
-        /* Стил за червения плейсхолдър/въведен текст */
+        /* Стил за червения плейсхолдър/въведен текст за КОДА */
         #unlockKey::placeholder { 
             color: #d93025 !important;
             opacity: 1; 
         }
         #unlockKey {
+            color: #d93025 !important;
+            font-weight: bold;
+        }
+        
+        /* Стил за червения плейсхолдър/въведен текст за ИМЕЙЛА */
+        #userEmail::placeholder { 
+            color: #d93025 !important;
+            opacity: 1; 
+        }
+        #userEmail {
             color: #d93025 !important;
             font-weight: bold;
         }
@@ -351,7 +361,7 @@
                 <p style="font-size: 14px; margin: 15px 0 5px 0;">Въведи данни за отключване:</p> 
                 
                 <input type="text" id="unlockKey" placeholder="ВЪВЕДЕТЕ ВАШИЯ КОД ТУК" style="margin-bottom: 10px;"/> 
-                <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ ИМЕЙЛА ОТ ПОКУПКАТА" style="margin-bottom: 10px;"/> 
+                <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ EMAIL" style="margin-bottom: 10px;"/> 
                 
                 <button class="btn-calc" onclick="unlockFeature()">ПОТВЪРДИ КЛЮЧ</button> 
 
@@ -397,6 +407,7 @@
         // ==============================================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
+                // Моля, уверете се, че service-worker.js съществува в същата папка
                 navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker регистрацията е успешна!');
@@ -459,7 +470,6 @@
                 date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
                 expires = "; expires=" + date.toUTCString();
             }
-            // SameSite=Lax и secure се използват за модерен браузър
             document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; secure"; 
         }
 
@@ -535,12 +545,12 @@
         
         async function unlockFeature() { 
             const unlockKey = document.getElementById('unlockKey').value.trim();
-            // НОВО: Взимане на имейла и преобразуване в малки букви
+            // Взимане на имейла и преобразуване в малки букви
             const userEmail = document.getElementById('userEmail').value.trim().toLowerCase(); 
             const uuid = getOrCreateUUID();
             
             if (!unlockKey || !userEmail) {
-                alert("Моля, въведете Вашия код и Имейл.");
+                alert("Моля, въведете Вашия код и EMAIL.");
                 return;
             }
 
