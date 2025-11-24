@@ -148,25 +148,7 @@
             margin: 0;
         }
 
-        /* Стил за червения плейсхолдър/въведен текст за КОДА */
-        #unlockKey::placeholder { 
-            color: #d93025 !important;
-            opacity: 1; 
-        }
-        #unlockKey {
-            color: #d93025 !important;
-            font-weight: bold;
-        }
-        
-        /* Стил за червения плейсхолдър/въведен текст за ИМЕЙЛА */
-        #userEmail::placeholder { 
-            color: #d93025 !important;
-            opacity: 1; 
-        }
-        #userEmail {
-            color: #d93025 !important;
-            font-weight: bold;
-        }
+        /* СТИЛОВЕТЕ ЗА ЧЕРВЕН ТЕКСТ В ПОЛЕТАТА СА ПРЕМАХНАТИ */
         
         /* --- НОВИ СТИЛОВЕ ЗА ПОДРАВНЯВАНЕ НА БУТОНИТЕ В ЗАКЛЮЧЕНИЯ ЕКРАН --- */
         
@@ -352,14 +334,14 @@
         
         <div class="full-lock-overlay" id="fullLockOverlay" style="display:none;">
             <div class="lock-content">
-                <p style="font-size: 20px; font-weight: bold; color: #158062;">ПРИЛОЖЕНИЕТО Е ЗАКЛЮЧЕНО</p>
                 
-                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" target="_blank" class="code-link" style="text-decoration: none;">
-                    <p style="font-size: 16px; margin: 15px 0 25px 0; line-height: 1.4; color: black; font-weight: 500;">
-                        Моля, въведете вашия <span style='color: #d93025; font-weight: bold;'>EMAIL</span> и <span style='color: #d93025; font-weight: bold;'>УНИКАЛЕН КОД</span>, получен след 
-                        <span style="color: #d93025; text-decoration: underline; font-weight: bold;">покупка</span>.
-                    </p>
+                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="margin-top: 0; margin-bottom: 25px; background-color: #158062 !important;">
+                    КУПИ СЕГА И АКТИВИРАЙ
                 </a>
+                
+                <p style="font-size: 16px; margin: 0 0 25px 0; line-height: 1.4; color: black; font-weight: 500;">
+                    Моля, въведете вашия <span style='color: #d93025; font-weight: bold;'>EMAIL</span> и <span style='color: #d93025; font-weight: bold;'>УНИКАЛЕН КОД</span>, получен след покупка.
+                </p>
                 
                 <input type="email" id="userEmail" placeholder="ВЪВЕДЕТЕ EMAIL" style="margin-bottom: 10px;"/> 
                 
@@ -367,12 +349,12 @@
                 
                 <button class="btn-calc" onclick="unlockFeature()">ПОТВЪРДИ КЛЮЧ</button> 
 
-                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank">
-                    ОТКЛЮЧИ ПРИЛОЖЕНИЕТО (ПОКУПКА)
+                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="background-color: #d93025 !important;">
+                    ВЪПРОСИ? СВЪРЖИ СЕ С НАС.
                 </a>
                 
                 <p class="small-info">
-                    Използвайте линка по-горе, за да получите Вашия код.
+                    Използвайте горния бутон, за да получите Вашия код.
                 </p>
             </div>
         </div>
