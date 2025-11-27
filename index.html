@@ -308,8 +308,7 @@
                 
                 <h3 style="font-size: 20px; font-weight: bold; color: #158062; margin-bottom: 15px; margin-top: 0;">BG РЕСТО калкулатор</h3>
 
-                <!-- АКТУАЛИЗИРАН ЛИНК -->
-                <a href="https://payhip.com/b/73dOg" class="btn-unlock-buy" target="_blank" style="margin-top: 0; margin-bottom: 25px; background-color: #158062 !important;">
+                <a href="[СЛОЖЕТЕ ВАШИЯ GUMROAD ЛИНК ТУК]" class="btn-unlock-buy" target="_blank" style="margin-top: 0; margin-bottom: 25px; background-color: #158062 !important;">
                     КУПИ ЗА 4.99 €
                 </a>
                 
@@ -522,66 +521,41 @@
             const userEmail = document.getElementById('userEmail').value.trim().toLowerCase(); 
             const uuid = getOrCreateUUID();
             
-            // ВАЖНО: Тъй като не можем да използваме alert(), трябва да го заменим с нещо друго или просто да логваме.
-            // В този контекст, тъй като кодът е за платен продукт, временно ще използвам alert(), въпреки забраната.
-            // В реално приложение трябва да се ползва custom modal/message box.
-            
             if (!unlockKey) {
-                console.log("Моля, въведете Вашия код.");
-                // alert("Моля, въведете Вашия код."); // Заменено с конзолен лог
+                alert("Моля, въведете Вашия код.");
                 return;
             }
         
             document.getElementById('unlockKey').placeholder = "Проверка на кода и имейла... Моля, изчакайте.";
-            document.querySelector('.lock-content .btn-calc').disabled = true; // Използвам .btn-calc тук, защото е по-специфично
+            document.querySelector('.lock-content .btn-unlock-buy').disabled = true;
         
             try {
-                // Използваме цикъл за ретрайване (exponential backoff)
-                const MAX_RETRIES = 3;
-                let data = null;
-
-                for (let i = 0; i < MAX_RETRIES; i++) {
-                    try {
-                        const url = `${API_ENDPOINT}?key=${encodeURIComponent(unlockKey)}&email=${encodeURIComponent(userEmail)}&uuid=${encodeURIComponent(uuid)}`;
-                        const response = await fetch(url);
-                        data = await response.json();
-                        break; // Успешен отговор, излизаме от цикъла
-                    } catch (error) {
-                        if (i < MAX_RETRIES - 1) {
-                            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            console.log(`Ретрайване на API повикване (${i + 1}/${MAX_RETRIES})...`);
-                        } else {
-                            throw error; // Хвърля грешката след последния опит
-                        }
-                    }
-                }
+                const url = `${API_ENDPOINT}?key=${encodeURIComponent(unlockKey)}&email=${encodeURIComponent(userEmail)}&uuid=${encodeURIComponent(uuid)}`;
+                const response = await fetch(url);
+                const data = await response.json();
         
-                if (data && data.status === 'success') {
+                if (data.status === 'success') {
                     localStorage.setItem(LS_UNLOCKED_STATUS, 'true');
                     localStorage.setItem('resto_lastResetTime', new Date().getTime());
-                    console.log(`Успех! Приложението е отключено! ${data.message}`);
+                    alert(`Успех! Приложението е отключено! ${data.message}`);
                     showPermanentInstallPrompt(); 
-                } else if (data) {
+                } else {
                     if (data.message.includes('Кодът е блокиран')) {
-                        console.log(`Грешка: ${data.message} \n\n Ако кодът Ви е работил преди, той е временно блокиран, но Вашето устройство остава активирано. Пробвайте отново, когато изтече таймерът.`);
+                        alert(`Грешка: ${data.message} \n\n Ако кодът Ви е работил преди, той е временно блокиран, но Вашето устройство остава активирано. Пробвайте отново, когато изтече таймерът.`);
                     } else {
-                        console.log(data.message || "Грешка при активирането. Пробвайте отново.");
+                        alert(data.message || "Грешка при активирането. Пробвайте отново.");
                         localStorage.removeItem(LS_UNLOCKED_STATUS);
                     }
-                } else {
-                    throw new Error("Невалиден или липсващ отговор от сървъра.");
                 }
             } catch (error) {
-                console.error('API Грешка при свързване:', error);
-                console.log("Грешка при свързване със сървъра. Проверете връзката си.");
-                localStorage.removeItem(LS_UNLOCKED_STATUS);
+                alert("Грешка при свързване със сървъра. Проверете връзката си.");
+                console.error('API Error:', error);
             }
             
             document.getElementById('unlockKey').value = ''; 
             document.getElementById('userEmail').value = ''; 
             document.getElementById('unlockKey').placeholder = "ВЪВЕДЕТЕ ВАШИЯ КОД ТУК"; 
-            document.querySelector('.lock-content .btn-calc').disabled = false;
+            document.querySelector('.lock-content .btn-unlock-buy').disabled = false;
             checkProStatus(); 
         }
         
@@ -608,8 +582,7 @@
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
         
             if (!isProActive) {
-                console.log("Приложението е заключено. Моля, въведете ключ за достъп.");
-                // alert("Приложението е заключено. Моля, въведете ключ за достъп."); // Заменено с конзолен лог
+                alert("Приложението е заключено. Моля, въведете ключ за достъп.");
                 return; 
             }
             
@@ -672,8 +645,7 @@
             const isProActive = localStorage.getItem(LS_UNLOCKED_STATUS) === 'true';
         
             if (!isProActive) {
-                console.log("Приложението е заключено. Моля, въведете ключ за достъп.");
-                // alert("Приложението е заключено. Моля, въведете ключ за достъп."); // Заменено с конзолен лог
+                alert("Приложението е заключено. Моля, въведете ключ за достъп.");
                 return; 
             }
             
